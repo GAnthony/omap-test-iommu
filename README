@@ -1,0 +1,59 @@
+Test of OMAP2 IOMMU APIs.
+
+Tested on DRA7XX.
+
+Kernel
+======
+
+Build the kernel with CONFIG_OMAP_IOMMU_DEBUG.  This will create an
+arch_data structure used by omap_iommu_attach(), and allow debugging of
+iommu registers and pagetables via /sys/kernel/debug/iommu/.
+
+Usage
+=====
+
+Load the test module using the 'name=' command-line argument
+with the name of one of the iommu devices listed in /sys/devices/platform.
+
+The test will map a predefined physical address to a device address, of a 
+given length.
+
+To see the mapping between the omap-iommu name and the device name, assuming
+the iommu driver is built with debug on, do:
+
+
+# dmesg | egrep iommu
+[    0.308197] omap-iommu omap-iommu.0: mmu0_dsp1 registered
+[    0.308288] omap-iommu omap-iommu.1: mmu1_dsp1 registered
+[    0.308349] omap-iommu omap-iommu.2: mmu0_dsp2 registered
+[    0.308441] omap-iommu omap-iommu.3: mmu1_dsp2 registered
+[    0.308502] omap-iommu omap-iommu.4: mmu_ipu1 registered
+[    0.308593] omap-iommu omap-iommu.5: mmu_ipu2 registered
+
+Example usage:
+
+# insmod iommu_test.ko name=omap-iommu.0 pa=0x00000 da=0xa000000 count=5
+[   63.216583] iommu_test_init: iommu_test_init entered
+[   63.221984] omap-iommu omap-iommu.0: Enabling IOMMU...
+[   63.227478] omap-iommu omap-iommu.0: dev->platform_data->name: mmu0_dsp1
+[   63.234558] omap-iommu omap-iommu.0: dev->archdata.iommu->name: mmu0_dsp1
+[   63.247772] omap_hwmod: mmu0_dsp1: _wait_target_disable failed
+[   63.254058] omap-iommu omap-iommu.0: mmu0_dsp1: version 3.0
+[   63.259979] omap-iommu omap-iommu.0: Mapping pa 0x100000, da 0xa100000, len 0x100000
+[   63.268280] omap-iommu omap-iommu.0: Mapping pa 0x200000, da 0xa200000, len 0x100000
+[   63.276519] omap-iommu omap-iommu.0: Mapping pa 0x300000, da 0xa300000, len 0x100000
+[   63.284729] omap-iommu omap-iommu.0: Mapping pa 0x400000, da 0xa400000, len 0x100000
+[   63.292938] omap-iommu omap-iommu.0: Mapping pa 0x500000, da 0xa500000, len 0x100000
+
+# cat /sys/kernel/debug/iommu/mmu0_dsp1/pagetable
+L:      da:      pa:
+-----------------------------------------
+1: 0a100000 00100002
+1: 0a200000 00200002
+1: 0a300000 00300002
+1: 0a400000 00400002
+1: 0a500000 00500002
+# rmmod iommu_test.ko
+[   98.466430] iommu_test_cleanup: iommu_test_cleanup entered
+[   98.478149] omap_hwmod: mmu0_dsp1: _wait_target_disable failed
+
